@@ -1,49 +1,24 @@
-pipeline
+node {
+    stage('Continous Download') {
+    checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/AnupamaSoma/maven-project.git']]])
+}
+stage('Continous Build') {
+    sh 'mvn package'
+}
+stage('Continous Deployment'){
+    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://172.31.31.62:8080')], contextPath: 'qaapp', war: '**\\*.war'
+}
+stage('Continous Testing')
 {
-    agent any
-    stages
-    {
-        stage('ContinuousDownload')
-        {
-            steps
-            {
-                git 'https://github.com/AnupamaSoma/maven-project.git'
-            }
-        }
-        stage('ContinuousBuild')
-        {
-            steps
-            {
-              sh label: '', script: 'mvn package'
-            }
-                
-        }
-        stage('ContinuousDeployment')
-        {
-            steps
-            {
-                deploy adapters: [tomcat8(credentialsId: 'mycred', path: '', url: 'http://172.31.81.254:8080')], contextPath: 'testapp', war: '**/*.war'
-            }
-            
-        }
-        stage('ContinuousTesting')
-        {
-            steps
-            {
-                git 'https://github.com/AnupamaSoma/FunctionalTesting.git'
-      
-               sh 'java -jar /home/ubuntu/.jenkins/workspace/Declarativepipeline/testing.jar '
-            }
+    git 'https://github.com/AnupamaSoma/FunctionalTesting.git'
+    sh 'java -jar /var/lib/jenkins/workspace/scripted_pipeline/testing.jar'
+}
+stage('Continous DElivery'){
+    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://172.31.17.232:8080')], contextPath: 'prodapp', war: '**\\*.war'
+}
+stage('Email Notifiacation')
+{
+   mail bcc: '', body: 'It is successfull', cc: '', from: '', replyTo: '', subject: 'Jenkins build', to: 'priyanjali.soma@gmail.com'
+}
 
-        }
-        stage('ContinuousDelivery')
-        {
-           steps
-           {
-               input message: 'Waiting for Approval from the DM!', submitter: 'naresh'
-               deploy adapters: [tomcat8(credentialsId: 'mycred', path: '', url: 'http://172.31.29.52:8080')], contextPath: 'prodapp', war: '**/*.war'
-           }
-        }
-    }
-    
 }
